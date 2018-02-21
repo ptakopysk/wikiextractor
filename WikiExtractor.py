@@ -164,6 +164,10 @@ options = SimpleNamespace(
     write_json = False,
     
     ##
+    # Whether to write plain text instead of the xml-like default output format
+    write_txt = False,
+    
+    ##
     # Whether to expand templates
     expand_templates = True,
 
@@ -561,6 +565,12 @@ class Extractor(object):
                 out_str = out_str.encode('utf-8')
             out.write(out_str)
             out.write('\n')
+        elif options.write_txt:
+            for line in text:
+                if out == sys.stdout:   # option -a or -o -
+                    line = line.encode('utf-8')
+                out.write(line)
+                out.write('\n')
         else:
             if options.print_revision:
                 header = '<doc id="%s" revid="%s" url="%s" title="%s">\n' % (self.id, self.revid, url, self.title)
@@ -794,7 +804,7 @@ class Extractor(object):
         return text
 
 
-    # ----------------------------------------------------------------------
+    # ------------------------------------------------------------------------------
     # Expand templates
 
     maxTemplateRecursionLevels = 30
@@ -1085,7 +1095,7 @@ class Extractor(object):
         return value
 
 
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # parameter handling
 
 
@@ -1314,7 +1324,7 @@ def findBalanced(text, openDelim=['[['], closeDelim=[']]']):
         cur = next.end()
 
 
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Modules
 
 # Only minimal support
@@ -1363,7 +1373,7 @@ def if_empty(*rest):
     return ''
 
 
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # String module emulation
 # https://en.wikipedia.org/wiki/Module:String
 
@@ -1458,7 +1468,7 @@ def string_rep(args):
     return source * count
 
 
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Module:Roman
 # http://en.wikipedia.org/w/index.php?title=Module:Roman
 # Modulo:Numero_romano
@@ -1490,7 +1500,7 @@ def roman_main(args):
     )
     return toRoman(num, smallRomans)
 
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 modules = {
     'convert': {
@@ -1520,7 +1530,7 @@ modules = {
     }
 }
 
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # variables
 
 
@@ -1644,7 +1654,7 @@ class MagicWords(object):
 magicWordsRE = re.compile('|'.join(MagicWords.switches))
 
 
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # parser functions utilities
 
 
@@ -1706,7 +1716,7 @@ def normalizeNamespace(ns):
     return ucfirst(ns)
 
 
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Parser functions
 # see http://www.mediawiki.org/wiki/Help:Extension:ParserFunctions
 # https://github.com/Wikia/app/blob/dev/extensions/ParserFunctions/ParserFunctions_body.php
@@ -1938,7 +1948,7 @@ def callParserFunction(functionName, args, extractor):
     return ""
 
 
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Expand using WikiMedia API
 # import json
 
@@ -1950,7 +1960,7 @@ def callParserFunction(functionName, args, extractor):
 #     exp = json.loads(urllib.urlopen(url))
 #     return exp['expandtemplates']['*']
 
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Extract Template definition
 
 reNoinclude = re.compile(r'<noinclude>(?:.*?)</noinclude>', re.DOTALL)
@@ -2006,7 +2016,7 @@ def define_template(title, page):
         options.templates[title] = text
 
 
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 def dropNested(text, openDelim, closeDelim):
     """
@@ -2077,7 +2087,7 @@ def dropSpans(spans, text):
     return res
 
 
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # WikiLinks
 
 # May be nested [[File:..|..[[..]]..|..]], [[Category:...]], etc.
@@ -2406,7 +2416,7 @@ def makeInternalLink(title, label):
         return label
 
 
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # External links
 
 # from: https://doc.wikimedia.org/mediawiki-core/master/php/DefaultSettings_8php_source.html
@@ -2491,7 +2501,7 @@ def makeExternalImage(url, alt=''):
         return alt
 
 
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 # match tail after wikilink
 tailRE = re.compile('\w+')
@@ -2711,7 +2721,7 @@ class OutputSplitter(object):
             return open(filename, 'wb')
 
 
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # READER
 
 tagRE = re.compile(r'(.*?)<(/?\w+)[^>]*?>(?:([^<]*)(<.*?>)?)?')
@@ -2974,7 +2984,7 @@ def process_dump(input_file, template_file, out_file, file_size, file_compress,
                  process_count, page_num, extract_duration, extract_rate)
 
 
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Multiprocess support
 
 
@@ -3074,7 +3084,7 @@ def reduce_process(opts, output_queue, spool_length,
         output.close()
 
 
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 # Minimum size of output files
 minFileSize = 200 * 1024
@@ -3096,6 +3106,8 @@ def main():
                         help="compress output files using bzip")
     groupO.add_argument("--json", action="store_true",
                         help="write output in json format instead of the default one")
+    groupO.add_argument("--txt", action="store_true",
+                        help="write output in plaintext format instead of the default one")
 
 
     groupP = parser.add_argument_group('Processing')
@@ -3147,6 +3159,7 @@ def main():
     options.keepLists = args.lists
     options.toHTML = args.html
     options.write_json = args.json
+    options.write_txt = args.txt
     options.print_revision = args.revision
     options.min_text_length = args.min_text_length
     if args.html:
